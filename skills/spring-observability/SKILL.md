@@ -143,9 +143,11 @@ management:
 
 - Spans are created automatically for HTTP server/client and `@Observed`. Kafka needs
   `spring.kafka.template.observation-enabled: true` and `spring.kafka.listener.observation-enabled: true`.
-- The **OTLP collector endpoint on Olympus is platform-provided** — confirm it with the platform team
-  (`#gp-plat-eng-intake`) and set it per env in `variants/<env>/values/values.yaml`. Until then keep
-  `management.tracing.enabled: false` rather than pointing at a guessed endpoint.
+- The OTLP collector is the per-cluster **Grafana Alloy** in `monitoring`. Observed in a GST incident playbook:
+  `<cluster>-grafana-alloy.monitoring:4317` (gRPC, e.g. `gst-prd-euw1-app-1-grafana-alloy.monitoring`), so set
+  `management.opentelemetry.tracing.export.otlp.transport: grpc` with `http://<cluster>-grafana-alloy.monitoring:4317`.
+  Confirm the endpoint and that traces are accepted with the Olympus team (see 3.3 below) before relying on it,
+  and set it per env in `variants/<env>/values/values.yaml`. Brief export failures are logged but harmless.
 - No PII in span attributes.
 
 ## 3. Logs (Loki)
@@ -221,3 +223,11 @@ void countsSuspensions() {
 `@AutoConfigureTracing` (Boot 4 replacements for `@AutoConfigureObservability`) when a test needs them.
 
 After deployment, confirm in Grafana with the `grafana-observability` skill (series exist with the expected labels).
+
+## Confluence references
+
+- [3.2 Telemetry standards](https://fluttergroup.atlassian.net/wiki/spaces/FGSC/pages/4295217775027) — naming, labels, correlation IDs, sampling
+- [3.3 Instrumenting with OpenTelemetry and Grafana Alloy](https://fluttergroup.atlassian.net/wiki/spaces/FGSC/pages/4295219445934)
+- [3.5 Cost, privacy and cardinality guidelines](https://fluttergroup.atlassian.net/wiki/spaces/FGSC/pages/4295220199515)
+- [Metric scraping with Pod/Service Monitors](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293662048312) · [Grafana Cloud – EKS](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4292131749900)
+- Playbook: [Grafana failed to export metrics](https://fluttergroup.atlassian.net/wiki/spaces/GTT/pages/4294864961799)

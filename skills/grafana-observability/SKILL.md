@@ -248,3 +248,12 @@ For every panel/alert expression:
 2. Data → check the magnitude makes sense (ratios 0–1, seconds not ms).
 3. No data → strip matchers one at a time; check the metric exists (`count by (__name__)`); fix the query or the app.
 4. Only then add it to the dashboard / rule.
+
+## Confluence references
+
+- [Grafana Cloud – EKS](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4292131749900) · [Metric scraping with Pod/Service Monitors](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293662048312) · [Argo CD Rollouts](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293435588678)
+- Standard: [3.4 Dashboards and service health](https://fluttergroup.atlassian.net/wiki/spaces/FGSC/pages/4295219740807) · [3.5 Cost, privacy and cardinality](https://fluttergroup.atlassian.net/wiki/spaces/FGSC/pages/4295220199515)
+- Alerting: [4.1 Alert design](https://fluttergroup.atlassian.net/wiki/spaces/FGSC/pages/4295220461592) · [4.2 SLO burn-rate alerting](https://fluttergroup.atlassian.net/wiki/spaces/FGSC/pages/4295217775048) · [4.3 Ownership, routing, on-call](https://fluttergroup.atlassian.net/wiki/spaces/FGSC/pages/4295220756503) · [4.4 Runbook standard](https://fluttergroup.atlassian.net/wiki/spaces/FGSC/pages/4295220527188)
+- GST example: [Dashboards and observability tools (tennis)](https://fluttergroup.atlassian.net/wiki/spaces/GTT/pages/4294461292662)
+
+Full list: `service-docs/references/confluence.md`.

@@ -337,3 +337,11 @@ ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
 3. Push the branch and watch: `gh run watch --exit-status`. On failure: `gh run view --log-failed`, fix, push. Retry at most 5 times
    per distinct error, then escalate with logs.
 4. Confirm artifacts with the `artifact-verifier` skill (image/chart present in `flutter.jfrog.io`).
+
+## Confluence references
+
+[Forge 101](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293289574688) ·
+[Forge Flow](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293299372049) ·
+[Forge Build](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293299765251) ·
+[Forge Store](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293431918677) ·
+[Forge onboarding and migration skills](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4295212532095).

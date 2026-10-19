@@ -260,3 +260,19 @@ Argo Rollouts is supported as a replacement for `Deployment` (canary with `setWe
 3. After merge: the `argocd` agent reports the app as `Synced` + `Healthy` in the target env, and `/actuator/health/readiness` is `UP`.
 4. On failure: inspect Argo CD events/pod logs (argocd/grafana agents), fix in the app chart or infra variant, re-run. At most 5
    attempts per distinct symptom before escalating to `#gp-plat-eng-intake` with the evidence.
+
+## Confluence references
+
+[GPPE User Docs](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4292610657719) ·
+[How to deploy via Olympus](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4292680712236) ·
+[Application requirements](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4294790643970) ·
+[Infra repo](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4292685431537) ·
+[Source repo](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4292685759170) ·
+[Probes](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293344133678) ·
+[Pod disruption](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4294790840484) ·
+[DNS and ingresses](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4292685496884) ·
+[External Secrets](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293479727124) ·
+[TLS certificates](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4294862536711) ·
+[Reloader](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293346983945) ·
+[Argo CD Rollouts](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293435588678) ·
+[Ephemeral environments](https://fluttergroup.atlassian.net/wiki/spaces/GPDP/pages/4293160927311). Full list: `service-docs/references/confluence.md`.
