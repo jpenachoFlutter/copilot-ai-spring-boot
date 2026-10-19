@@ -70,8 +70,8 @@ If these can't be determined, that is the first finding.
 
 ## 8. Observability
 - Prometheus reporter on 9249, `PodMonitor` targeting the `metrics` port, `k8s.grafana.com/job` annotation.
-- Dashboards/alerts cover restarts, checkpoint failures/age, back-pressure, source lag, input-run and LLM/tool failure ratios, tokens.
-- Agent metric names used in queries were confirmed in Grafana (not guessed).
+- Dashboards/alerts cover restarts, checkpoint failures/age, back-pressure, source lag, event throughput, chat-model retries, tokens (input-run and LLM/tool failure ratios only on releases that ship them).
+- Agent metric names match the `flink-agents-gst` §7 table for the chosen release (label-based `action`/`model`, `operator_name="action_execute_operator"`, no `_total`) or were confirmed in Grafana. Flag `main`-only metrics (`numOfInputRuns*`, `numOfLlmCallsFailed`, …) on 0.3.x as **Critical** (always-empty panels and alerts).
 
 ## 9. Tests and evidence
 - Unit tests for actions/tools/prompt builders, positive and negative (timeouts, malformed model output, provider errors).

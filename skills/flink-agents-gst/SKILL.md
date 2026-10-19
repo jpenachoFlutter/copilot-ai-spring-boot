@@ -143,12 +143,35 @@ command must produce the shaded jar **and** stage the dist jar before the image 
   sum by (job_name) (increase(flink_jobmanager_job_numberOfFailedCheckpoints{namespace="$ns"}[1h]))
   max by (task_name) (flink_taskmanager_job_task_backPressuredTimeMsPerSecond{namespace="$ns"})
   ```
-- Agent metrics (operator scope; operator name = agent name): `numOfEventProcessed`, `numOfActionsExecuted`,
+- Agent metrics — **0.3.1**, derived from upstream source (`runtime/.../metrics/BuiltInMetrics.java`,
+  `BaseChatModelSetup.recordTokenMetrics`, `ChatModelAction.recordRetryMetrics`) + Flink Prometheus reporter rules.
+  All live on the operator `action-execute-operator` (fixed name set in `CompileUtils`, exported as
+  `operator_name="action_execute_operator"` — GST STG confirms the reporter turns illegal characters into `_`).
+  Key-value groups (`action`, `model`) become **labels**, and their key is part of the name. Counters have **no
+  `_total`** suffix (same as `flink_jobmanager_job_numRestarts`):
+
+  | Prometheus name (`flink_taskmanager_job_task_operator_` +) | Labels | Source |
+  |---|---|---|
+  | `numOfEventProcessed`, `numOfEventProcessedPerSec` | `operator_name` | agent |
+  | `numOfActionsExecuted`, `numOfActionsExecutedPerSec` | `operator_name` | agent |
+  | `eventLogTruncatedEvents` | `operator_name` | agent |
+  | `action_numOfActionsExecuted`, `action_numOfActionsExecutedPerSec` | `action` | per action |
+  | `action_model_promptTokens`, `action_model_completionTokens` | `action`, `model` | chat model calls |
+  | `action_model_retryCount`, `action_model_retryWaitSec` | `action`, `model` | chat model retries |
+  | `<customName>` / `action_<customName>` | `operator_name` / `action` | `getAgentMetricGroup()` / `getActionMetricGroup()` |
+
+  ```promql
+  sum by (job_name) (rate(flink_taskmanager_job_task_operator_numOfEventProcessed{namespace="$ns", operator_name="action_execute_operator"}[5m]))
+  sum by (model) (increase(flink_taskmanager_job_task_operator_action_model_promptTokens{namespace="$ns"}[1h])
+                + increase(flink_taskmanager_job_task_operator_action_model_completionTokens{namespace="$ns"}[1h]))
+  sum by (action, model) (increase(flink_taskmanager_job_task_operator_action_model_retryCount{namespace="$ns"}[15m]))
+  ```
   `numOfInputRunsSucceeded/Failed`, `numOfPendingInputEvents`, `numOfActiveInputRuns`, `numOfLlmCallsFailed`,
-  `numOfToolCallsFailed`, token counters under `action.chat_model_action.model.<model>`; custom ones via
-  `getAgentMetricGroup()`. Their Prometheus names are **not yet observed** at GST — confirm with the `grafana` agent
-  (metric names matching `flink_taskmanager_job_task_operator_.*numOf.*`) before building panels or alerts.
-- Alerts: restarts > 0 over 15m, failed checkpoints, checkpoint age, input-run failure ratio, LLM call failure ratio, token burn rate.
+  `numOfToolCallsFailed` exist **only on upstream `main`** (post-0.3.1) — do not use them on 0.3.x.
+  No GST job emits these yet: on the first STG deploy, run a quick check with the `grafana` agent
+  (`{__name__=~"flink_taskmanager_job_task_operator_(action_)?(model_)?(numOf|promptTokens|completionTokens|retry).*"}`)
+  and fix this table if names differ.
+- Alerts: restarts > 0 over 15m, failed checkpoints, checkpoint age, event throughput dropping to 0 while Kafka lag grows, chat-model retry rate, token burn rate (and, from the release that ships them, input-run / LLM-call failure ratios).
 
 ## 8. Tests and evidence levels
 
