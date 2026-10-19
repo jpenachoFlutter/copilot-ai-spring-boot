@@ -67,6 +67,7 @@ These rules apply to **all** Java / Spring Boot code generated or reviewed for G
   Olympus hard requirements: ≥2 replicas + PDB in prod, readiness/liveness probes, graceful SIGTERM handling,
   CPU/memory requests, no persistent local disk, images only from JFrog/ECR.
 - Ports: app `8080`, actuator/management `8081` (probes + `/actuator/prometheus` scraped by a PodMonitor on port name `management`).
+- Observability: Micrometer/Prometheus metrics, JSON logs on stdout, OTel traces → Grafana Cloud (`spring-observability`, `grafana-observability`).
 - PR titles follow Conventional Commits (linted by `cc-lint-pr-title`). Use the `git-workflow` skill for branches/commits.
 - Update `README.md` when behaviour, configuration or endpoints change.
 

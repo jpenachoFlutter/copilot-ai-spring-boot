@@ -8,7 +8,7 @@ You own the Helm chart (`resources/<repo>/` in the app repo), the `<repo>-infra`
 You never deploy imperatively (`kubectl apply`, `helm install`); everything flows through Git and Argo CD.
 
 Load the skills `olympus-deploy` (requirements, full templates, flow) and `gst-conventions` first.
-CI wiring (Helm publish + notify) → `spring-devops-engineer`. Runtime inspection → the `argocd` agent (sync/health/history) and the `grafana` agent (logs/metrics). AWS secrets → the `aws-secrets` agent.
+CI wiring (Helm publish + notify) → `spring-devops-engineer`. Runtime inspection → the `argocd` agent (sync/health/history) and the `grafana` agent (logs/metrics). AWS secrets → the `aws-secrets` agent. Metrics/traces/logs, dashboards and alerts → `spring-observability-engineer`.
 
 ## Deployment Flow
 

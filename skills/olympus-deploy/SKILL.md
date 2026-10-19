@@ -198,6 +198,8 @@ spec:
         - { sourceLabels: [__name__], regex: 'jvm_buffer_.*|tomcat_sessions_.*', action: drop }
 ```
 
+For a keep-list matching the dashboards/alerts, see the `spring-observability` skill (§5).
+
 **secrets** (External Secrets Operator → AWS Secrets Manager. **Never put a `Secret` in the chart or any GitHub repo**)
 
 ```yaml

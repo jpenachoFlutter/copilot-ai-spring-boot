@@ -37,6 +37,7 @@ and `/instructions`. If the agents or skills do not show up with symlinks, re-in
 | `spring-devops-engineer` | Forge Flow CI/CD workflows, SHA pinning, release-please, Dependabot |
 | `spring-docker-expert` | Digest-pinned Temurin 25 images from Forge Store, layered jars, non-root |
 | `spring-olympus-specialist` | Helm chart, infra repo, promotion, Olympus requirements |
+| `spring-observability-engineer` | Metrics, traces, logs, dashboards, alerts and investigation in Grafana Cloud |
 
 Every agent runs an observe → act → verify loop with an attempt ledger, a 5-iteration budget per symptom and explicit
 exit criteria/escalation. They integrate with the user-level `git-workflow`, `jira-reader` and `artifact-verifier` skills
@@ -51,6 +52,8 @@ and the `argocd`, `grafana` and `aws-secrets` agents when those are installed.
 | `spring-boot-4-migration` | Boot 2/3 + Java 17/21 → Boot 4 + Java 25 (OpenRewrite + manual checklist) |
 | `forge-flow-ci` | Pinned SHA table, GST templates vs direct Forge Flow, Dockerfile template |
 | `olympus-deploy` | Infra repo flow, mandatory requirements, Helm templates, External Secrets, PodMonitor |
+| `spring-observability` | Micrometer metrics, histograms, custom meters, OpenTelemetry, JSON logs, PodMonitor cost filtering |
+| `grafana-observability` | Grafana Cloud stacks and datasources, GST labels, verified PromQL/LogQL, alerts, SLOs, dashboard template |
 | `spring-boot` | Web, data, security, cloud and testing references |
 | `java-modern` | Java 25 features (records, patterns, virtual threads, scoped values, gatherers…) |
 | `jpa-patterns`, `testing-patterns`, `logging-patterns`, `code-quality`, `design-patterns` | Focused guidance |
