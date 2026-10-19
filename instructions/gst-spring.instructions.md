@@ -13,3 +13,11 @@ When working on Java / Spring Boot code, builds, Dockerfiles, CI workflows or He
   `spring-boot`, `java-modern`, `jpa-patterns`, `testing-patterns`, `logging-patterns`, `code-quality`, `design-patterns`.
 - Specialist agents: `spring-boot-engineer`, `spring-code-reviewer`, `spring-security-engineer`, `spring-devops-engineer`,
   `spring-docker-expert`, `spring-olympus-specialist`.
+
+## Flink / Flink Agents jobs (exception)
+
+If the project depends on `org.apache.flink` (or the `flink-agents` Python package), it is a Flink job, not a Spring
+Boot service: load `flink-agents-gst` (GST layer) and the upstream `flink-agents-dev` skill instead of the Boot-specific
+skills. Spring Boot rules and Java 25 do **not** apply (Java release ≤ the Flink image JDK, currently 21); group id,
+Forge Flow, Forge Store, secrets and Olympus rules still do. Agents: `flink-agents-architect` (plan),
+`flink-agents-engineer` (implement), `flink-agents-reviewer` (review, with `flink-agents-review`).

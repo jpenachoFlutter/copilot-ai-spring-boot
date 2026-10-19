@@ -21,6 +21,7 @@ Derived from [piomin/claude-ai-spring-boot](https://github.com/piomin/claude-ai-
 ./install.sh            # symlink agents/, skills/, instructions/ into ~/.copilot (or $COPILOT_HOME)
 ./install.sh --copy     # copy instead of symlink (re-run after every git pull)
 ./install.sh --dry-run  # show what would happen
+./install.sh --skip-upstream  # don't fetch the pinned apache/flink-agents skill (offline)
 ./install.sh --uninstall
 ```
 
@@ -39,6 +40,9 @@ and `/instructions`. If the agents or skills do not show up with symlinks, re-in
 | `spring-olympus-specialist` | Helm chart, infra repo, promotion, Olympus requirements |
 | `spring-observability-engineer` | Metrics, traces, logs, dashboards, alerts and investigation in Grafana Cloud |
 | `spring-documentation-engineer` | README + docs/: Argo CD apps, dependencies, Grafana dashboards/alerts, runbook (Flutter 4.4) |
+| `flink-agents-architect` | Read-only plan for an Apache Flink Agents job: gates, versions, flow, consistency, deployment, tasks |
+| `flink-agents-engineer` | Implement Flink Agents jobs (Gradle/Maven, Java 21), image and FlinkDeployment values, MiniCluster tests |
+| `flink-agents-reviewer` | Read-only review of Flink Agents code, packaging, state/exactly-once, LLM safety, FKO deployment |
 
 Every agent runs an observe → act → verify loop with an attempt ledger, a 5-iteration budget per symptom and explicit
 exit criteria/escalation. They integrate with the user-level `git-workflow`, `jira-reader` and `artifact-verifier` skills
@@ -56,6 +60,9 @@ and the `argocd`, `grafana` and `aws-secrets` agents when those are installed.
 | `spring-observability` | Micrometer metrics, histograms, custom meters, OpenTelemetry, JSON logs, PodMonitor cost filtering |
 | `service-docs` | Docs layout, discovery commands, templates (runbook per Flutter 4.4), Confluence reference index |
 | `grafana-observability` | Grafana Cloud stacks and datasources, GST labels, verified PromQL/LogQL, alerts, SLOs, dashboard template |
+| `flink-agents-gst` | GST layer for Flink Agents: versions, Java 21 exception, packaging, baked Flink image, FKO/Olympus, metrics, plan template |
+| `flink-agents-review` | Flink Agents review checklist and severity guide |
+| `flink-agents-dev` *(upstream)* | Apache Flink Agents' own skill (APIs, gated interview, patterns), linked by `install.sh` from a pinned SHA |
 | `spring-boot` | Web, data, security, cloud and testing references |
 | `java-modern` | Java 25 features (records, patterns, virtual threads, scoped values, gatherers…) |
 | `jpa-patterns`, `testing-patterns`, `logging-patterns`, `code-quality`, `design-patterns` | Focused guidance |
@@ -72,4 +79,7 @@ Copilot at `gst-conventions` and the agents above.
 - **Versions:** the version tables in `gradle-build` / `maven-build` (Boot, Gradle, Maven, Lombok, JaCoCo, Testcontainers).
 - **Base image digest:** in `forge-flow-ci` (Dockerfile template).
 - **Olympus docs** (GPPE User Docs, Confluence GPDP) are the source of truth for `olympus-deploy`.
+- **Upstream `flink-agents-dev`:** `install.sh` does a sparse checkout of `apache/flink-agents` at `FLINK_AGENTS_SHA` into
+  `.upstream/` (git-ignored) and links the skill. Bump the SHA deliberately and re-check `flink-agents-gst`; use
+  `--skip-upstream` offline. Flink Agents/Flink versions and the Flink image digest live in `flink-agents-gst`.
 - **Confluence index:** `skills/service-docs/references/confluence.md` (Olympus, Forge, observability 3.x, alerting/on-call/runbook 4.x).

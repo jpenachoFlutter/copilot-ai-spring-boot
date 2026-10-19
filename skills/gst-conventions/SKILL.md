@@ -8,6 +8,9 @@ description: Mandatory GST (Flutter) conventions for Java / Spring Boot services
 These rules apply to **all** Java / Spring Boot code generated or reviewed for GST. Other skills
 (`spring-boot`, `java-modern`, `testing-patterns`, …) give detail; when they conflict, **this skill wins**.
 
+> **Scope:** Flink / Flink Agents jobs are an exception — Spring Boot rules and Java 25 don't apply (Java release ≤ the
+> Flink image JDK). Use `flink-agents-gst`, which keeps the group id, CI, Forge Store, secrets and Olympus rules below.
+
 ## Platform baseline
 
 | Item | Rule |
