@@ -40,3 +40,6 @@ build/
 
 ### Claude Code ###
 .claude/
+
+### Upstream skills fetched by install.sh ###
+.upstream/

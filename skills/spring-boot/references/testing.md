@@ -1,6 +1,9 @@
 # Testing - Spring Boot Test
 
-## Unit Testing with JUnit 5
+> Boot 4 specifics (per-module test starters, moved slice-annotation packages, `@MockitoBean`, `RestTestClient`, Testcontainers 2
+> `org.testcontainers.postgresql.PostgreSQLContainer`, Jackson 3 `JsonMapper`) are summarised in the `testing-patterns` skill.
+
+## Unit Testing with JUnit 6 (Jupiter)
 
 ```java
 @ExtendWith(MockitoExtension.class)
@@ -151,11 +154,11 @@ class UserControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private UserService userService;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;   // tools.jackson.databind.json.JsonMapper (Jackson 3)
 
     @Test
     @WithMockUser(roles = "ADMIN")
@@ -206,7 +209,7 @@ class UserControllerTest {
         // When & Then
         mockMvc.perform(post("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(jsonMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
             .andExpect(header().exists("Location"))
             .andExpect(jsonPath("$.email").value(request.email()))
@@ -318,7 +321,7 @@ class UserServiceIntegrationTest {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17-alpine");
 
     @Autowired
     private UserService userService;
@@ -358,7 +361,7 @@ class UserServiceIntegrationTest {
 ```java
 // @DynamicPropertySource - still works, but @ServiceConnection is simpler
 @Container
-static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17-alpine")
     .withDatabaseName("testdb")
     .withUsername("test")
     .withPassword("test");
@@ -379,8 +382,8 @@ public class TestcontainersConfig {
 
     @Bean
     @ServiceConnection
-    public PostgreSQLContainer<?> postgresContainer() {
-        return new PostgreSQLContainer<>("postgres:16-alpine");
+    public PostgreSQLContainer postgresContainer() {
+        return new PostgreSQLContainer("postgres:17-alpine");
     }
 }
 
@@ -401,7 +404,7 @@ class UserReactiveControllerTest {
     @Autowired
     private WebTestClient webTestClient;
 
-    @MockBean
+    @MockitoBean
     private UserReactiveService userService;
 
     @Test
@@ -554,7 +557,7 @@ public class TestDataFactory {
 | `@WebMvcTest` | Test MVC controllers with mocked services |
 | `@WebFluxTest` | Test reactive controllers |
 | `@DataJpaTest` | Test JPA repositories with in-memory database |
-| `@MockBean` | Add mock bean to Spring context |
+| `@MockitoBean` | Add mock bean to Spring context |
 | `@WithMockUser` | Mock authenticated user for security tests |
 | `@Testcontainers` | Enable Testcontainers support |
 | `@ActiveProfiles` | Activate specific Spring profiles for test |

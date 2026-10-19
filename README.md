@@ -1,137 +1,85 @@
-# Spring Boot Plugin for Claude Code (v1.0)
+# Copilot CLI — Spring Boot toolkit for Flutter GST
 
-A Claude Code plugin with production-ready skills and agents for building Spring Boot 4.x / Java 21+ applications. Install the plugin and start generating your app — the skills and agents guide Claude to follow best practices for REST APIs, JPA, security, testing, cloud-native deployment, and Kubernetes.
+GitHub Copilot CLI **agents**, **skills** and **instructions** for building, migrating, shipping and deploying
+GST Spring Boot services and libraries:
 
-## Installation
+| Baseline | |
+|----------|---|
+| Runtime | Spring Boot **4.x**, Java **25** (LTS), Jakarta EE 11, Jackson 3, Spring Security 7, Hibernate 7 |
+| Group id | `com.flutter.gst` |
+| Build | Gradle (Kotlin DSL) **or** Maven: detected per project; for new projects the agent asks |
+| Tests | JUnit 6, Mockito, Testcontainers 2, `RestTestClient` |
+| CI | Forge Flow reusable workflows; **every** `uses:` pinned to a commit SHA |
+| Artifacts | Forge Store (`flutter.jfrog.io`) |
+| Deploy | Olympus (EKS + Argo CD) via Helm chart + `<repo>-infra` repo |
+
+Derived from [piomin/claude-ai-spring-boot](https://github.com/piomin/claude-ai-spring-boot) (Apache-2.0).
+
+## Install
 
 ```bash
-# Install from Anthropic marketplace
-claude plugin install spring-boot-template@piomin
-
-# Or install directly from repository
-claude plugin install --url https://github.com/piomin/claude-ai-spring-boot
+./install.sh            # symlink agents/, skills/, instructions/ into ~/.copilot (or $COPILOT_HOME)
+./install.sh --copy     # copy instead of symlink (re-run after every git pull)
+./install.sh --dry-run  # show what would happen
+./install.sh --skip-upstream  # don't fetch the pinned apache/flink-agents skill (offline)
+./install.sh --uninstall
 ```
 
-To test locally during development:
+Existing files with the same name are moved to `*.bak.<timestamp>`. Restart Copilot CLI and check `/agent`, `/skills`
+and `/instructions`. If the agents or skills do not show up with symlinks, re-install with `--copy`.
 
-```bash
-claude --plugin-dir /path/to/claude-ai-spring-boot
-```
+## Agents (`agents/`)
 
-## What's Included
-
-### Agents (`agents/`)
-
-Specialized agents that Claude Code can invoke for specific tasks:
-
-| Agent | Purpose |
+| Agent | Use for |
 |-------|---------|
-| `spring-boot-engineer` | Build Spring Boot 4.x apps with layered architecture |
-| `code-reviewer` | Review code for correctness, security, Spring Boot conventions |
-| `kubernetes-specialist` | K8s deployments, probes, ConfigMap/Secret, Prometheus, Skaffold |
-| `devops-engineer` | CI/CD pipelines, Paketo Buildpacks, Skaffold |
-| `docker-expert` | Multi-stage Dockerfiles, Paketo Buildpacks, image optimization |
-| `security-engineer` | Spring Security, OWASP, input validation, SSL Bundles |
+| `spring-boot-engineer` | Implement features, scaffold services, run the Boot 4 / Java 25 migration |
+| `spring-code-reviewer` | Read-only review of diffs/PRs (Boot 4 leftovers, Lombok misuse, delivery readiness) |
+| `spring-security-engineer` | Spring Security 7, JWT/OAuth2, validation, secrets, TLS truststores |
+| `spring-devops-engineer` | Forge Flow CI/CD workflows, SHA pinning, release-please, Dependabot |
+| `spring-docker-expert` | Digest-pinned Temurin 25 images from Forge Store, layered jars, non-root |
+| `spring-olympus-specialist` | Helm chart, infra repo, promotion, Olympus requirements |
+| `spring-observability-engineer` | Metrics, traces, logs, dashboards, alerts and investigation in Grafana Cloud |
+| `spring-documentation-engineer` | README + docs/: Argo CD apps, dependencies, Grafana dashboards/alerts, runbook (Flutter 4.4) |
+| `flink-agents-architect` | Read-only plan for an Apache Flink Agents job: gates, versions, flow, consistency, deployment, tasks |
+| `flink-agents-engineer` | Implement Flink Agents jobs (Gradle/Maven, Java 21), image and FlinkDeployment values, MiniCluster tests |
+| `flink-agents-reviewer` | Read-only review of Flink Agents code, packaging, state/exactly-once, LLM safety, FKO deployment |
 
-### Skills (`skills/`)
+Every agent runs an observe → act → verify loop with an attempt ledger, a 5-iteration budget per symptom and explicit
+exit criteria/escalation. They integrate with the user-level `git-workflow`, `jira-reader` and `artifact-verifier` skills
+and the `argocd`, `grafana` and `aws-secrets` agents when those are installed.
 
-Reusable knowledge that Claude loads contextually:
+## Skills (`skills/`)
 
-| Skill | What it teaches |
-|-------|-----------------|
-| `conventions` | Mandatory project rules: No Lombok, constructor injection, RestClient, testing standards |
-| `spring-boot` | Core Spring Boot development with 5 reference guides (web, data, security, cloud, testing) |
-| `code-quality` | Clean code principles, API contracts, null safety, exception handling |
-| `design-patterns` | Classic patterns (Factory, Builder, Strategy) + enterprise (Saga, Outbox, CQRS) |
-| `testing-patterns` | JUnit 5, Mockito, MockMvc, RestTestClient, Testcontainers with @ServiceConnection |
-| `java-modern` | Java 21+ features: records, sealed classes, pattern matching, virtual threads |
-| `jpa-patterns` | JPA/Hibernate pitfalls (N+1, lazy loading), Hibernate 6/7, optimistic locking |
-| `logging-patterns` | Structured JSON logging, SLF4J, MDC, AI-friendly formats |
+| Skill | Content |
+|-------|---------|
+| `gst-conventions` | **Load first.** Platform baseline, build-tool detection, Lombok rules, delivery rules, finish checklist |
+| `gradle-build` / `maven-build` | Reference `build.gradle.kts` / `pom.xml`, wrappers, Forge Store config, release-please |
+| `spring-boot-4-migration` | Boot 2/3 + Java 17/21 → Boot 4 + Java 25 (OpenRewrite + manual checklist) |
+| `forge-flow-ci` | Pinned SHA table, GST templates vs direct Forge Flow, Dockerfile template |
+| `olympus-deploy` | Infra repo flow, mandatory requirements, Helm templates, External Secrets, PodMonitor |
+| `spring-observability` | Micrometer metrics, histograms, custom meters, OpenTelemetry, JSON logs, PodMonitor cost filtering |
+| `service-docs` | Docs layout, discovery commands, templates (runbook per Flutter 4.4), Confluence reference index |
+| `grafana-observability` | Grafana Cloud stacks and datasources, GST labels, verified PromQL/LogQL, alerts, SLOs, dashboard template |
+| `flink-agents-gst` | GST layer for Flink Agents: versions, Java 21 exception, packaging, baked Flink image, FKO/Olympus, metrics, plan template |
+| `flink-agents-review` | Flink Agents review checklist and severity guide |
+| `flink-agents-dev` *(upstream)* | Apache Flink Agents' own skill (APIs, gated interview, patterns), linked by `install.sh` from a pinned SHA |
+| `spring-boot` | Web, data, security, cloud and testing references |
+| `java-modern` | Java 25 features (records, patterns, virtual threads, scoped values, gatherers…) |
+| `jpa-patterns`, `testing-patterns`, `logging-patterns`, `code-quality`, `design-patterns` | Focused guidance |
 
-### Key Conventions
+## Instructions (`instructions/`)
 
-The plugin enforces these rules via the `conventions` skill:
+`gst-spring.instructions.md` is a modular user-level instruction (applied to Java/build/CI/chart files) that points
+Copilot at `gst-conventions` and the agents above.
 
-- **No Lombok** — explicit constructors, getters/setters, `LoggerFactory.getLogger()`
-- **Constructor injection** — no `@Autowired` on fields
-- **RestClient** over RestTemplate/WebClient for blocking HTTP calls
-- **RestTestClient** with `@AutoConfigureRestTestClient` for integration tests
-- **Testcontainers** with `@ServiceConnection` (not `@DynamicPropertySource`)
-- **Jakarta Persistence** (not `javax.persistence`)
-- **Maven** with `pl.piomin.services` group ID
-- **CI pipeline** — auto-detected from existing project config
-- **Docker Compose** for local dependencies
+## Maintenance
 
-### Cloud-Native Coverage
-
-The `cloud.md` reference covers:
-
-- Spring Cloud (Config Server, Eureka, Gateway, Resilience4j, LoadBalancer)
-- Distributed tracing with OpenTelemetry (OTLP) and Micrometer Observation API
-- Virtual Threads, HTTP Interface Clients (`@HttpExchange`), GraalVM Native Image
-- Kubernetes: ConfigMap/Secret with `envFrom`, Prometheus annotations, startup/liveness/readiness probes, `preStop` hook, graceful shutdown
-- TLS: cert-manager (Ingress TLS + pod-level mTLS), SSL Bundles with hot reload
-- Config Tree for reading mounted secrets from files
-- Paketo Buildpacks via `spring-boot:build-image`
-- Skaffold for local K8s development loop
-
-## Usage
-
-After installing, describe what you want to build — Claude will use the skills and agents automatically:
-
-```bash
-cd my-project
-claude
-> "Build a REST API for managing orders with PostgreSQL"
-```
-
-You can also invoke skills and agents directly:
-
-```bash
-# Invoke a skill
-> /spring-boot-template:jpa-patterns
-
-# Use an agent
-> @agent-spring-boot-template:code-reviewer
-```
-
-## Directory Structure
-
-```
-.
-├── .claude-plugin/
-│   └── plugin.json
-├── agents/
-│   ├── code-reviewer.md
-│   ├── devops-engineer.md
-│   ├── docker-expert.md
-│   ├── kubernetes-specialist.md
-│   ├── security-engineer.md
-│   └── spring-boot-engineer.md
-├── skills/
-│   ├── conventions/SKILL.md
-│   ├── code-quality/SKILL.md
-│   ├── design-patterns/SKILL.md
-│   ├── java-modern/SKILL.md
-│   ├── jpa-patterns/SKILL.md
-│   ├── logging-patterns/SKILL.md
-│   ├── spring-boot/
-│   │   ├── SKILL.md
-│   │   └── references/
-│   │       ├── cloud.md
-│   │       ├── data.md
-│   │       ├── security.md
-│   │       ├── testing.md
-│   │       └── web.md
-│   └── testing-patterns/SKILL.md
-├── README.md
-└── LICENSE
-```
-
-## Blog Post
-
-You can find a detailed explanation of this plugin in the post: [Claude Code Template for Spring Boot](https://piotrminkowski.com/2026/03/24/claude-code-template-for-spring-boot/).
-
-## License
-
-Apache License 2.0
+- **Pinned SHAs:** `skills/forge-flow-ci/SKILL.md` contains the SHA table and a script to re-resolve it. Refresh it when Forge Flow or
+  the GST templates release.
+- **Versions:** the version tables in `gradle-build` / `maven-build` (Boot, Gradle, Maven, Lombok, JaCoCo, Testcontainers).
+- **Base image digest:** in `forge-flow-ci` (Dockerfile template).
+- **Olympus docs** (GPPE User Docs, Confluence GPDP) are the source of truth for `olympus-deploy`.
+- **Upstream `flink-agents-dev`:** `install.sh` does a sparse checkout of `apache/flink-agents` at `FLINK_AGENTS_SHA` into
+  `.upstream/` (git-ignored) and links the skill. Bump the SHA deliberately and re-check `flink-agents-gst`; use
+  `--skip-upstream` offline. Flink Agents/Flink versions and the Flink image digest live in `flink-agents-gst`.
+- **Confluence index:** `skills/service-docs/references/confluence.md` (Olympus, Forge, observability 3.x, alerting/on-call/runbook 4.x).

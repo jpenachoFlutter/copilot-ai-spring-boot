@@ -1,6 +1,6 @@
 ---
 name: testing-patterns
-description: Testing patterns for Spring Boot - JUnit 5, Mockito, MockMvc, Testcontainers, positive and negative test cases. Use when user asks about testing, writing tests, test coverage, or test failures.
+description: Testing patterns for Spring Boot - JUnit 6 (Jupiter), Mockito, MockMvc, Testcontainers, positive and negative test cases. Use when user asks about testing, writing tests, test coverage, or test failures.
 ---
 
 # Testing Patterns Skill
@@ -21,6 +21,17 @@ Testing strategies for Spring Boot applications. Always write both positive and 
 | Unit | `@ExtendWith(MockitoExtension.class)` | Fast | Single class | Business logic in services |
 | Slice | `@WebMvcTest`, `@DataJpaTest` | Medium | One layer | Controllers, repositories |
 | Integration | `@SpringBootTest` | Slow | Full app | End-to-end flows, cross-layer |
+
+### Boot 4 / JUnit 6 / Testcontainers 2 notes
+
+- Test starters are per module: `spring-boot-starter-webmvc-test`, `spring-boot-starter-data-jpa-test`, `spring-boot-starter-security-test`, … (alongside `spring-boot-starter-test`).
+- Slice annotations moved: `org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest`, `org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest`.
+- Mocks: `@MockitoBean` / `@MockitoSpyBean` (`org.springframework.test.context.bean.override.mockito`). `@MockBean` is removed.
+- HTTP integration tests: `RestTestClient` + `@AutoConfigureRestTestClient` (`org.springframework.boot.resttestclient.autoconfigure`). `TestRestTemplate` is gone.
+- JSON: inject `tools.jackson.databind.json.JsonMapper` (Jackson 3).
+- Testcontainers 2: modules are `testcontainers-postgresql`, `testcontainers-junit-jupiter`, …; the class is `org.testcontainers.postgresql.PostgreSQLContainer` (no generic type parameter).
+- Gradle needs `testRuntimeOnly("org.junit.platform:junit-platform-launcher")`.
+- Lombok in tests: Gradle needs `testCompileOnly` + `testAnnotationProcessor`; Maven inherits from `annotationProcessorPaths`.
 
 ---
 
@@ -108,11 +119,11 @@ class ProductControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private ProductService productService;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;   // tools.jackson.databind.json.JsonMapper (Jackson 3)
 
     // ✅ Positive - successful creation
     @Test
@@ -127,7 +138,7 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(jsonMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.name").value("Widget"));
     }
@@ -140,7 +151,7 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(jsonMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.name").exists());
 
@@ -172,7 +183,7 @@ class ProductRepositoryTest {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17-alpine");
 
     @Autowired
     private ProductRepository productRepository;
@@ -222,7 +233,7 @@ class ProductIntegrationTest {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17-alpine");
 
     @Autowired
     private RestTestClient restTestClient;
@@ -284,8 +295,8 @@ public class TestcontainersConfig {
 
     @Bean
     @ServiceConnection
-    public PostgreSQLContainer<?> postgresContainer() {
-        return new PostgreSQLContainer<>("postgres:16-alpine");
+    public PostgreSQLContainer postgresContainer() {
+        return new PostgreSQLContainer("postgres:17-alpine");
     }
 }
 

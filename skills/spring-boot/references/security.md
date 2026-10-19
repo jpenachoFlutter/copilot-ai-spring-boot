@@ -1,4 +1,4 @@
-# Security - Spring Security 6
+# Security - Spring Security 7
 
 ## Security Configuration
 
@@ -458,9 +458,13 @@ public class OAuth2ResourceServerConfig {
 
 ## SSL Bundles & Certificate Hot Reload
 
-Spring Boot 3.1+ provides unified SSL configuration via SSL Bundles, with automatic reload when certificates change on disk.
+Spring Boot provides unified SSL configuration via SSL Bundles, with automatic reload when certificates change on disk.
 
-### PEM-based SSL Bundle (e.g., cert-manager on Kubernetes)
+> **Olympus:** inbound TLS is terminated at the NLB/ingress-nginx (platform wildcard certs), so the app usually serves plain HTTP on 8080.
+> For outbound calls to Flutter-internal endpoints, trust the platform-mounted `/etc/ssl/certs/keystore.p12` (password `changeit`), via
+> `JAVA_TOOL_OPTIONS` (see `olympus-deploy`) or a JKS/PKCS12 bundle pointing at it. Use bundles like the ones below only for mTLS client certs.
+
+### PEM-based SSL Bundle (mutual TLS / custom certs mounted from a Secret)
 
 ```yaml
 # application.yml
@@ -489,14 +493,10 @@ server:
 public class RestClientSslConfig {
 
     @Bean
-    public RestClient secureRestClient(RestClient.Builder builder, SslBundles sslBundles) {
+    public RestClient secureRestClient(RestClient.Builder builder, RestClientSsl ssl) {
         return builder
             .baseUrl("https://internal-service")
-            .apply(b -> b.requestFactory(
-                ClientHttpRequestFactories.get(
-                    ClientHttpRequestFactorySettings.DEFAULTS
-                        .withSslBundle(sslBundles.getBundle("server"))
-                )))
+            .apply(ssl.fromBundle("server"))
             .build();
     }
 }
@@ -517,7 +517,7 @@ spring:
             type: PKCS12
 ```
 
-When `reload-on-update: true` is set, Spring Boot watches the certificate files and automatically reloads the SSL context when they change — no application restart required. This works seamlessly with Kubernetes cert-manager, which writes renewed certificates to the mounted Secret volume.
+When `reload-on-update: true` is set, Spring Boot watches the certificate files and automatically reloads the SSL context when they change — no application restart required. This works with certificates delivered by External Secrets into a mounted Secret volume.
 
 ## Quick Reference
 

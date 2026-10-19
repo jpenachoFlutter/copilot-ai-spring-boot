@@ -1,11 +1,12 @@
 ---
 name: java-modern
-description: Java 21+ features for Spring Boot - records, sealed classes, pattern matching, virtual threads, text blocks. Use when user asks about modern Java, Java 21 features, or when modernizing existing code.
+description: Java 25 (LTS) features for Spring Boot 4 - records, sealed classes, pattern matching, virtual threads, scoped values, stream gatherers, flexible constructor bodies, module imports, compact object headers. Use when user asks about modern Java, Java 25 features, or when modernizing existing code.
 ---
 
 # Java Modern Skill
 
-Java 21+ language features and how to use them in Spring Boot applications.
+Java 25 (LTS) language features, the GST baseline, and how to use them in Spring Boot 4 applications.
+Preview features (`--enable-preview`) are **not** allowed in GST production code. Everything below is final in Java 25 unless marked otherwise.
 
 ## When to Use
 - Building new Spring Boot 4.x applications (default to modern features)
@@ -207,7 +208,7 @@ public class GlobalExceptionHandler {
 
 ---
 
-## Virtual Threads (Java 21 + Spring Boot 4.x)
+## Virtual Threads (Java 25 + Spring Boot 4.x)
 
 ```yaml
 # application.yml - enables virtual threads for all request handling
@@ -247,9 +248,10 @@ public class ReportService {
 }
 ```
 
-**Do NOT use with virtual threads:**
-- `synchronized` blocks holding across blocking calls (use `ReentrantLock` instead)
-- Thread-local heavy frameworks (check compatibility first)
+**Notes for Java 25:**
+- `synchronized` no longer pins carrier threads (JEP 491, Java 24), so the old "replace `synchronized` with `ReentrantLock`" advice is obsolete. Native/JNI calls can still pin.
+- Do not pool virtual threads, and do not use `ThreadLocal` as a cache (millions of threads mean millions of copies). Use `ScopedValue` for request context.
+- CPU-bound work still belongs on a bounded platform-thread pool.
 
 ---
 
@@ -307,6 +309,81 @@ User oldest = users.getLast();
 
 ---
 
+## Java 22–25 Features (final in 25)
+
+### Unnamed variables `_` (Java 22)
+
+```java
+try { parse(s); } catch (NumberFormatException _) { return Optional.empty(); }
+map.forEach((_, value) -> process(value));
+if (event instanceof OrderPlaced(var id, _, _)) { audit(id); }
+```
+
+### Stream gatherers (Java 24)
+
+```java
+// Fixed-size batches for bulk inserts / Kafka sends
+List<List<Order>> batches = orders.stream()
+    .gather(Gatherers.windowFixed(500))
+    .toList();
+
+// Concurrent mapping with bounded parallelism (uses virtual threads)
+List<Price> prices = ids.stream()
+    .gather(Gatherers.mapConcurrent(16, pricingClient::fetch))
+    .toList();
+```
+
+### Flexible constructor bodies (Java 25, JEP 513)
+
+```java
+public final class Money extends Amount {
+    public Money(BigDecimal value, Currency currency) {
+        Objects.requireNonNull(currency);            // validate BEFORE super(...)
+        if (value.signum() < 0) throw new IllegalArgumentException("negative");
+        super(value.setScale(currency.getDefaultFractionDigits(), RoundingMode.HALF_EVEN));
+    }
+}
+```
+
+### Scoped values (Java 25, JEP 506): replaces ThreadLocal for request context
+
+```java
+public final class RequestContext {
+    public static final ScopedValue<String> CORRELATION_ID = ScopedValue.newInstance();
+}
+
+// In a filter
+ScopedValue.where(RequestContext.CORRELATION_ID, correlationId)
+    .run(() -> chain.doFilter(request, response));   // wrap checked exceptions as needed
+
+// Anywhere downstream on the same (virtual) thread
+String id = RequestContext.CORRELATION_ID.orElse("n/a");
+```
+
+Values are immutable, automatically unbound when the scope exits, and cheap with virtual threads.
+Keep MDC for logging (Micrometer Tracing populates it).
+
+### Module import declarations (Java 25, JEP 511)
+
+`import module java.base;` is fine for scripts, tests and compact source files. In production code, prefer explicit imports
+for readability and to avoid ambiguous names.
+
+### Compact source files & instance main (Java 25, JEP 512)
+
+Use these for throwaway tools and scripts only (`java Tool.java`), never in service code.
+
+### Runtime (no code change)
+
+- **Compact object headers** (JEP 519): `-XX:+UseCompactObjectHeaders` cuts heap usage by about 10–20%. Enable it after load testing.
+- **AOT cache** (JEPs 483/514/515): `-XX:AOTCacheOutput=app.aot` during a training run, then `-XX:AOTCache=app.aot` for faster startup.
+- **Generational Shenandoah** (JEP 521) is now a product option. G1 remains the default and is right for most services.
+
+### Still preview in 25 — do not use
+
+Structured concurrency (`StructuredTaskScope`), primitive types in patterns, stable values.
+
+---
+
 ## Quick Decision Guide
 
 | Feature | Use For | Avoid When |
@@ -314,6 +391,9 @@ User oldest = users.getLast();
 | **Records** | DTOs, config, value objects | JPA entities, mutable state |
 | **Sealed classes** | Closed type hierarchies, domain events | Open extension needed |
 | **Pattern matching switch** | Handling sealed types, replacing if-else chains | Simple equality checks |
-| **Virtual threads** | High-concurrency blocking I/O | CPU-bound work, `synchronized` over I/O |
+| **Virtual threads** | High-concurrency blocking I/O | CPU-bound work |
+| **Scoped values** | Request/tenant/correlation context | Mutable per-thread state |
+| **Stream gatherers** | Batching, windowing, bounded concurrent mapping | Simple map/filter |
+| **Flexible constructors** | Validating/deriving args before `super(...)` | — |
 | **Text blocks** | JPQL queries, JSON test data, SQL | Single-line strings |
 | **SequencedCollections** | First/last access on ordered collections | Unordered sets/maps |

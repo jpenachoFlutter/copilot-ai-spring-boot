@@ -137,7 +137,7 @@ public interface UserRepository extends JpaRepository<User, Long>,
     int deactivateInactiveUsers(@Param("threshold") LocalDateTime threshold);
 
     // Projection for read-only DTOs
-    @Query("SELECT new pl.piomin.services.dto.UserSummary(u.id, u.username, u.email) " +
+    @Query("SELECT new com.flutter.gst.orders.dto.UserSummary(u.id, u.username, u.email) " +
            "FROM User u WHERE u.active = true")
     List<UserSummary> findAllActiveSummaries();
 }
