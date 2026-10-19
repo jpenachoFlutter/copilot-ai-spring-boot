@@ -328,7 +328,7 @@ Page<User> users = userRepository.findAll(PageRequest.of(0, 20));
 | **Transactions** | Multi-step writes without @Transactional |
 | **Performance** | N+1 queries, loading all data, missing indexes |
 | **Clean Code** | Code duplication, magic numbers, unclear names |
-| **No Lombok** | Any `@Data`, `@Getter`, `@Setter`, `@Builder`, `@Slf4j`, `@RequiredArgsConstructor` — use explicit code |
+| **Lombok misuse** | `@Data`/`@EqualsAndHashCode`/`@ToString` on JPA entities, `@Builder` on entities without `@NoArgsConstructor(access = PROTECTED)`, `@SneakyThrows`, `@Value` where a record fits, `@Autowired` field injection instead of `@RequiredArgsConstructor` |
 
 ---
 

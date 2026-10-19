@@ -20,7 +20,7 @@ Enterprise Spring Boot 4.x development with focus on clean architecture and prod
 2. **Design** - Plan architecture, confirm design before coding
 3. **Implement** - Build with constructor injection and layered architecture
 4. **Secure** - Add Spring Security, OAuth2, method security; verify tests pass
-5. **Test** - Write unit, integration tests; run `./mvnw test` and confirm all pass
+5. **Test** - Write unit, integration tests; run `./gradlew build` or `./mvnw verify` (match the project) and confirm all pass
 6. **Deploy** - Configure health checks via Actuator; validate `/actuator/health` returns UP
 
 ## Quick Start Templates
@@ -29,6 +29,9 @@ Enterprise Spring Boot 4.x development with focus on clean architecture and prod
 ```java
 @Entity
 @Table(name = "products")
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)   // Lombok OK; never @Data/@EqualsAndHashCode/@ToString on entities
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,8 +42,6 @@ public class Product {
 
     @DecimalMin("0.0")
     private BigDecimal price;
-
-    // Getters/Setters (no Lombok)
 }
 ```
 
@@ -54,13 +55,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 ### Service
 ```java
 @Service
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ProductService {
     private final ProductRepository repo;
-
-    public ProductService(ProductRepository repo) {
-        this.repo = repo;
-    }
 
     public List<ProductResponse> search(String name) {
         return repo.findByNameContainingIgnoreCase(name).stream()
@@ -142,7 +140,7 @@ public class GlobalExceptionHandler {
 @WebMvcTest(ProductController.class)
 class ProductControllerTest {
     @Autowired MockMvc mockMvc;
-    @MockBean ProductService service;
+    @MockitoBean ProductService service;
 
     @Test
     void createProduct_validRequest_returns201() throws Exception {
@@ -168,7 +166,7 @@ Load detailed patterns based on context:
 |-------|-----------|-------------|
 | Web/REST | `references/web.md` | Controllers, validation, exception handling, Problem Details (RFC 7807) |
 | Data Access | `references/data.md` | JPA, repositories, transactions, queries |
-| Security | `references/security.md` | Spring Security 6, OAuth2, JWT, auth |
+| Security | `references/security.md` | Spring Security 7, OAuth2, JWT, auth |
 | Cloud/Config | `references/cloud.md` | Config server, discovery, resilience, virtual threads, HTTP interfaces, GraalVM native, OTLP tracing |
 | Testing | `references/testing.md` | Unit, integration, slice tests, Testcontainers @ServiceConnection |
 
@@ -195,7 +193,7 @@ Load detailed patterns based on context:
 
 **Project Structure:**
 ```
-src/main/java/pl/piomin/services/
+src/main/java/com/flutter/gst/<service>/
 ├── controller/     # REST endpoints
 ├── service/        # Business logic
 ├── repository/     # Data access
@@ -278,4 +276,4 @@ public class SecurityConfig {
 
 ## Knowledge Base
 
-Spring Boot 4.x, Java 21+, Spring WebFlux, Project Reactor, Spring Data JPA, Spring Security, OAuth2/JWT, Hibernate, R2DBC, Spring Cloud, Resilience4j, Micrometer, JUnit 5, Testcontainers, Mockito, Maven, Paketo Buildpacks, Skaffold
+Spring Boot 4.x, Spring Framework 7, Java 25, Jackson 3, Spring WebFlux, Project Reactor, Spring Data JPA, Spring Security 7, OAuth2/JWT, Hibernate 7, R2DBC, Spring Cloud, Resilience4j, Micrometer, JUnit Jupiter 6, Testcontainers 2, Mockito, Gradle, Maven, Forge Flow (JFrog), Olympus (EKS + Argo CD)

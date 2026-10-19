@@ -1,6 +1,6 @@
 ---
 name: logging-patterns
-description: Java logging best practices with SLF4J, structured logging (JSON), and MDC for request tracing. Includes AI-friendly log formats for Claude Code debugging. Use when user asks about logging, debugging application flow, or analyzing logs.
+description: Java logging best practices with SLF4J, structured logging (JSON), and MDC for request tracing. Includes AI-friendly log formats for Copilot debugging. Use when user asks about logging, debugging application flow, or analyzing logs.
 ---
 
 # Logging Patterns Skill
@@ -12,7 +12,7 @@ description: Java logging best practices with SLF4J, structured logging (JSON), 
 - Analyzing application flow from logs
 - Setting up structured logging (JSON)
 - Request tracing with correlation IDs
-- AI/Claude Code needs to analyze application behavior
+- AI agents (Copilot) needs to analyze application behavior
 
 ---
 
@@ -20,7 +20,7 @@ description: Java logging best practices with SLF4J, structured logging (JSON), 
 
 > **Key insight:** JSON logs are better for AI analysis - faster parsing, fewer tokens, direct field access.
 
-### Why JSON for AI/Claude Code?
+### Why JSON for AI agents (Copilot)?
 
 ```
 # Text format - AI must "interpret" the string
@@ -60,7 +60,7 @@ logging:
 {
   "timestamp": "2026-01-29T10:15:30.123Z",
   "level": "INFO",
-  "logger": "pl.piomin.services.OrderService",
+  "logger": "com.flutter.gst.orders.OrderService",
   "message": "Order created",
   "requestId": "req-abc123",
   "traceId": "trace-xyz",
@@ -77,7 +77,7 @@ logging:
 - `duration_ms` - identify slow operations
 - `level` - quick filter for errors
 
-### Reading Logs with AI/Claude Code
+### Reading Logs with AI agents (Copilot)
 
 When asking AI to analyze logs:
 
@@ -140,7 +140,7 @@ logging:
 
 Output:
 ```json
-{"@timestamp":"2026-01-29T10:15:30.123Z","level":"INFO","logger_name":"pl.piomin.services.OrderService","message":"Order created","traceId":"abc123def456","spanId":"789xyz","service.name":"order-service"}
+{"@timestamp":"2026-01-29T10:15:30.123Z","level":"INFO","logger_name":"com.flutter.gst.orders.OrderService","message":"Order created","traceId":"abc123def456","spanId":"789xyz","service.name":"order-service"}
 ```
 
 The `traceId` field in JSON logs is the same trace ID visible in Jaeger, Tempo, or any OTel-compatible backend — enabling direct log-to-trace correlation.
@@ -177,10 +177,11 @@ logging:
 **Usage:**
 ```bash
 # Default: JSON (for AI, CI/CD, production)
-./mvnw spring-boot:run
+./gradlew bootRun            # or ./mvnw spring-boot:run
 
 # Human-readable when needed
-./mvnw spring-boot:run -Dspring.profiles.active=human-logs
+./gradlew bootRun --args='--spring.profiles.active=human-logs'
+./mvnw spring-boot:run -Dspring-boot.run.profiles=human-logs
 ```
 
 ---

@@ -270,43 +270,36 @@ resilience4j:
 ### OTLP Exporter (Preferred)
 
 ```yaml
-# application.yml - OpenTelemetry Protocol (recommended over Zipkin)
+# application.yml - OpenTelemetry Protocol (Boot 4 property names)
 management:
   tracing:
     sampling:
-      probability: 1.0
-  otlp:
+      probability: 1.0          # lower (e.g. 0.1) in prd
+  opentelemetry:
     tracing:
-      endpoint: http://localhost:4318/v1/traces
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
 
 logging:
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
 ```
 
+```kotlin
+// Boot 4: one starter brings Micrometer tracing bridge + OTLP exporters (metrics, traces, logs)
+implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
+```
+
 ```xml
-<!-- pom.xml -->
 <dependency>
-    <groupId>io.micrometer</groupId>
-    <artifactId>micrometer-tracing-bridge-otel</artifactId>
-</dependency>
-<dependency>
-    <groupId>io.opentelemetry</groupId>
-    <artifactId>opentelemetry-exporter-otlp</artifactId>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-opentelemetry</artifactId>
 </dependency>
 ```
 
-### Zipkin Exporter (Alternative)
-
-```yaml
-management:
-  tracing:
-    sampling:
-      probability: 1.0
-  zipkin:
-    tracing:
-      endpoint: http://localhost:9411/api/v2/spans
-```
+> Boot 3 used `management.otlp.tracing.endpoint` plus separate `micrometer-tracing-bridge-otel` / `opentelemetry-exporter-otlp`
+> dependencies. Migrate both when upgrading (see `spring-boot-4-migration`).
 
 ### Custom Spans with Observation API
 
@@ -434,217 +427,33 @@ public class CustomHealthIndicator implements HealthIndicator {
 }
 ```
 
-## Kubernetes Deployment
+## Kubernetes Deployment (Olympus)
 
-### ConfigMap and Secret
+GST services deploy to **Olympus** (EKS + Argo CD) via Helm charts and a `<repo>-infra` repository.
+Do not hand-write generic Deployment/Ingress/cert-manager manifests here — load the **`olympus-deploy`**
+skill for chart layout, probes, secrets (External Secrets Operator), TLS, metrics and ingress conventions.
 
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: user-service-config
-data:
-  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/mydb"
-  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
-  SERVER_SHUTDOWN: "graceful"
-```
-
-Configure datasource credentials via Kubernetes Secrets mounted as environment variables or using Config Tree (see below).
-
-### Config Tree for Mounted Secrets
-
-Instead of env vars, read secrets from mounted files using Config Tree (more secure — secrets don't leak via `/proc/environ`):
+Spring-side settings that Olympus relies on:
 
 ```yaml
-# application.yml
+management:
+  server:
+    port: 8081               # probes + /actuator/prometheus on the "management" port
+  endpoint:
+    health:
+      probes:
+        enabled: true          # /actuator/health/liveness + /readiness
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+server:
+  shutdown: graceful
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   config:
-    import: "optional:configtree:/run/secrets/"
-```
-
-With a Kubernetes Secret mounted at `/run/secrets/`, each key becomes a file. Spring Boot reads the file content as the property value.
-
-```yaml
-# Kubernetes volume mount for Config Tree
-spec:
-  containers:
-  - name: app
-    volumeMounts:
-    - name: secrets
-      mountPath: /run/secrets
-      readOnly: true
-  volumes:
-  - name: secrets
-    secret:
-      secretName: user-service-secrets
-```
-
-### Deployment Manifest
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: user-service
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: user-service
-  template:
-    metadata:
-      labels:
-        app: user-service
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
-        prometheus.io/path: "/actuator/prometheus"
-    spec:
-      containers:
-      - name: user-service
-        image: user-service:1.0.0
-        ports:
-        - containerPort: 8080
-        envFrom:
-        - configMapRef:
-            name: user-service-config
-        - secretRef:
-            name: user-service-secrets
-        env:
-        - name: SPRING_PROFILES_ACTIVE
-          value: "kubernetes"
-        - name: JAVA_TOOL_OPTIONS
-          value: "-XX:MaxRAMPercentage=75.0"
-        livenessProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: 8080
-          initialDelaySeconds: 15
-          periodSeconds: 5
-        startupProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: 8080
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          failureThreshold: 20
-        lifecycle:
-          preStop:
-            exec:
-              command: ["sh", "-c", "sleep 10"]
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: user-service
-spec:
-  selector:
-    app: user-service
-  ports:
-  - port: 80
-    targetPort: 8080
-  type: ClusterIP
-```
-
-### Ingress TLS with cert-manager
-
-cert-manager automatically provisions and renews TLS certificates on Kubernetes.
-
-```yaml
-# ClusterIssuer for Let's Encrypt
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-prod
-spec:
-  acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
-    email: admin@example.com
-    privateKeySecretRef:
-      name: letsencrypt-prod-key
-    solvers:
-    - http01:
-        ingress:
-          class: nginx
-```
-
-```yaml
-# Ingress with automatic TLS
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: user-service-ingress
-  annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-spec:
-  ingressClassName: nginx
-  tls:
-  - hosts:
-    - api.example.com
-    secretName: user-service-tls
-  rules:
-  - host: api.example.com
-    http:
-      paths:
-      - path: /api/users
-        pathType: Prefix
-        backend:
-          service:
-            name: user-service
-            port:
-              number: 80
-```
-
-cert-manager creates and renews the `user-service-tls` Secret automatically. For end-to-end TLS (not just ingress termination), mount the same Secret into the pod and configure Spring Boot SSL Bundles with `reload-on-update: true` (see security reference).
-
-### Certificate for mTLS between services
-
-```yaml
-# cert-manager Certificate for pod-level TLS
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: user-service-cert
-spec:
-  secretName: user-service-tls-pod
-  issuerRef:
-    name: internal-ca
-    kind: ClusterIssuer
-  dnsNames:
-  - user-service
-  - user-service.default.svc.cluster.local
-  duration: 720h
-  renewBefore: 48h
-```
-
-```yaml
-# Mount into pod for Spring Boot SSL Bundle
-spec:
-  containers:
-  - name: user-service
-    volumeMounts:
-    - name: tls-certs
-      mountPath: /etc/ssl/certs
-      readOnly: true
-  volumes:
-  - name: tls-certs
-    secret:
-      secretName: user-service-tls-pod
+    import: "optional:configtree:/run/secrets/"   # only if secrets are mounted as files
 ```
 
 ## Virtual Threads
@@ -665,7 +474,7 @@ Virtual threads eliminate the need for WebFlux in most cases. With `spring.threa
 
 **When to still use WebFlux:** streaming responses, SSE, WebSocket, or when you need backpressure.
 
-## HTTP Interface Clients (Spring 6+)
+## HTTP Interface Clients (Spring Framework 7 / Boot 4)
 
 ```java
 // Declarative HTTP client - replaces OpenFeign
@@ -681,7 +490,13 @@ public interface UserClient {
     UserResponse createUser(@RequestBody UserCreateRequest request);
 }
 
-// Configuration
+// Boot 4 preferred: register clients declaratively, configure via properties
+// spring.http.serviceclient.users.base-url=http://user-service
+@Configuration
+@ImportHttpServices(group = "users", types = UserClient.class)
+public class HttpClientsConfig {}
+
+// Manual alternative
 @Configuration
 public class ClientConfig {
 
@@ -701,28 +516,25 @@ public class ClientConfig {
 ## GraalVM Native Image
 
 ```xml
-<!-- pom.xml - add native profile support -->
-<parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.1.0</version>
-</parent>
-
+<!-- pom.xml (parent spring-boot-starter-parent 4.1.x) -->
 <plugin>
     <groupId>org.graalvm.buildtools</groupId>
     <artifactId>native-maven-plugin</artifactId>
 </plugin>
 ```
 
-```bash
-# Build native image
-./mvnw -Pnative native:compile
+```kotlin
+// build.gradle.kts
+plugins { id("org.graalvm.buildtools.native") version "<latest>" }
+```
 
-# Build native Docker image with Buildpacks
-./mvnw -Pnative spring-boot:build-image
+```bash
+./mvnw -Pnative native:compile        # Maven
+./gradlew nativeCompile               # Gradle
 ```
 
 Benefits: ~50ms startup, ~50MB RSS memory. Trade-offs: longer build time, reflection requires hints.
+GST default is the JVM image (Java 25 + AOT cache). Use native only when the user explicitly asks; it needs a GraalVM build in CI.
 
 ## Graceful Shutdown
 
@@ -747,105 +559,11 @@ spec:
           command: ["sh", "-c", "sleep 10"]
 ```
 
-## Docker Configuration
+## Container Images
 
-### Multi-stage Build
-
-```dockerfile
-FROM eclipse-temurin:21-jdk-alpine AS build
-WORKDIR /workspace/app
-
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-RUN ./mvnw dependency:go-offline -B
-
-COPY src src
-RUN ./mvnw package -DskipTests
-
-FROM eclipse-temurin:21-jre-alpine
-RUN addgroup -S app && adduser -S app -G app && apk add --no-cache curl
-WORKDIR /app
-COPY --from=build /workspace/app/target/*.jar app.jar
-USER app
-HEALTHCHECK --interval=30s --timeout=3s CMD curl -sf http://localhost:8080/actuator/health || exit 1
-ENTRYPOINT ["java", "-jar", "app.jar"]
-```
-
-### Paketo Buildpacks (Recommended)
-
-Paketo Buildpacks build OCI images without a Dockerfile. Integrated into Spring Boot Maven plugin.
-
-```bash
-# Build image (uses Paketo by default)
-./mvnw spring-boot:build-image \
-  -Dspring-boot.build-image.imageName=myapp:1.0.0
-
-# Build native image with Paketo
-./mvnw -Pnative spring-boot:build-image \
-  -Dspring-boot.build-image.imageName=myapp:1.0.0-native
-```
-
-```xml
-<!-- pom.xml - Paketo configuration -->
-<plugin>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-maven-plugin</artifactId>
-    <configuration>
-        <image>
-            <name>${project.artifactId}:${project.version}</name>
-            <env>
-                <BP_JVM_VERSION>21</BP_JVM_VERSION>
-                <BPE_JAVA_TOOL_OPTIONS>-XX:MaxRAMPercentage=75.0</BPE_JAVA_TOOL_OPTIONS>
-            </env>
-        </image>
-    </configuration>
-</plugin>
-```
-
-Advantages over Dockerfile:
-- Reproducible builds, no Dockerfile to maintain
-- Automatic security patching of base image layers
-- Optimized layering (dependencies cached separately from app code)
-- Supported by Spring Boot Maven plugin out of the box
-
-## Local K8s Development with Skaffold
-
-Skaffold automates the build → push → deploy loop.
-
-```yaml
-# skaffold.yaml
-apiVersion: skaffold/v4beta11
-kind: Config
-metadata:
-  name: user-service
-build:
-  artifacts:
-  - image: user-service
-    custom:
-      buildCommand: |
-        ./mvnw spring-boot:build-image \
-          -Dspring-boot.build-image.imageName=$IMAGE -q
-      dependencies:
-        paths:
-        - src/**
-        - pom.xml
-deploy:
-  kubectl:
-    manifests:
-    - k8s/*.yaml
-```
-
-```bash
-# Continuous development - rebuild and redeploy on code changes
-skaffold dev
-
-# One-time build + deploy
-skaffold run
-
-# Deploy to specific profile/environment
-skaffold run -p production
-```
+Images are built and published by **Forge Flow** (`java-build-scan-publish.yml`) from a `Dockerfile`
+to `flutter.jfrog.io/grt-container-local`. See the **`forge-flow-ci`** skill and the
+`spring-docker-expert` agent for the Java 25 Dockerfile template.
 
 ## Quick Reference
 
@@ -861,9 +579,7 @@ skaffold run -p production
 | **Virtual Threads** | High-throughput blocking I/O without WebFlux |
 | **HTTP Interfaces** | Declarative HTTP clients (replaces Feign) |
 | **Native Image** | Fast startup, low memory with GraalVM |
-| **Paketo Buildpacks** | Build OCI images without Dockerfile (Spring Boot plugin) |
-| **Skaffold** | Local Kubernetes development loop (build → deploy → watch) |
+| **Forge Flow** | Reusable CI: build, scan, publish image to Forge Store (JFrog) |
 | **Config Tree** | Read secrets from mounted files instead of env vars |
-| **cert-manager** | Automatic TLS certificate provisioning and renewal on K8s |
 | **SSL Bundles** | Unified SSL config with hot reload (see security reference) |
-| **Kubernetes** | Container orchestration, ConfigMap/Secret, probes, Prometheus |
+| **Olympus** | EKS + Argo CD platform; Helm chart + `<repo>-infra` repo (see `olympus-deploy`) |

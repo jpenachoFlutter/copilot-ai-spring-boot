@@ -208,7 +208,7 @@ public class OrderService {
 // ✅ Avoid lazy loading entirely - query only what you need
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    @Query("SELECT new pl.piomin.services.dto.OrderSummary(o.id, o.status, SIZE(o.items)) " +
+    @Query("SELECT new com.flutter.gst.orders.dto.OrderSummary(o.id, o.status, SIZE(o.items)) " +
            "FROM Order o WHERE o.id = :id")
     Optional<OrderSummary> findSummaryById(@Param("id") Long id);
 }
@@ -392,7 +392,7 @@ public record ProductSummary(Long id, String name, BigDecimal price) {}
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    @Query("SELECT new pl.piomin.services.dto.ProductSummary(p.id, p.name, p.price) " +
+    @Query("SELECT new com.flutter.gst.orders.dto.ProductSummary(p.id, p.name, p.price) " +
            "FROM Product p WHERE p.price > :minPrice")
     List<ProductSummary> findExpensiveProducts(@Param("minPrice") BigDecimal minPrice);
 }
