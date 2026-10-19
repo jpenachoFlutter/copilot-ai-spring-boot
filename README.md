@@ -22,6 +22,7 @@ Derived from [piomin/claude-ai-spring-boot](https://github.com/piomin/claude-ai-
 ./install.sh --copy     # copy instead of symlink (re-run after every git pull)
 ./install.sh --dry-run  # show what would happen
 ./install.sh --skip-upstream  # don't fetch the pinned apache/flink-agents skill (offline)
+./install.sh --check-upstream # read-only: is there a newer upstream flink-agents-dev to pin?
 ./install.sh --uninstall
 ```
 
@@ -80,6 +81,8 @@ Copilot at `gst-conventions` and the agents above.
 - **Base image digest:** in `forge-flow-ci` (Dockerfile template).
 - **Olympus docs** (GPPE User Docs, Confluence GPDP) are the source of truth for `olympus-deploy`.
 - **Upstream `flink-agents-dev`:** `install.sh` does a sparse checkout of `apache/flink-agents` at `FLINK_AGENTS_SHA` into
-  `.upstream/` (git-ignored) and links the skill. Bump the SHA deliberately and re-check `flink-agents-gst`; use
+  `.upstream/` (git-ignored) and links the skill. Run `./install.sh --check-upstream` (read-only; exit `10` = update
+  available) to see whether a release tag now ships the skill or the skill changed on `main`. The pin is a `main` commit
+  until a release ships it; then pin to the release tag's commit. Bump the SHA deliberately and re-check `flink-agents-gst`; use
   `--skip-upstream` offline. Flink Agents/Flink versions and the Flink image digest live in `flink-agents-gst`.
 - **Confluence index:** `skills/service-docs/references/confluence.md` (Olympus, Forge, observability 3.x, alerting/on-call/runbook 4.x).
